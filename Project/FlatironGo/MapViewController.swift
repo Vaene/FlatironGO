@@ -14,11 +14,48 @@ final class MapViewController: UIViewController  {
     var annotations: [String: Treasure] = [:]
     var mapView: MGLMapView!
     
+    let captureSession = AVCaptureSession()
+    let motionManager = CMMotionManager()
+    var previewLayer: AVCaptureVideoPreviewLayer!
+    
+    // The following four are already created for you!
+    var treasure: Treasure!
+    var foundImageView: UIImageView!
+    var dismissButton: UIButton!
+    var foundTreasure = false
+    
+    // The following two are not--make sure to copy/paste them into Xcode
+    var quaternionX: Double = 0.0 {
+        didSet {
+            if !foundTreasure { treasure.item.center.y = (CGFloat(quaternionX) * view.bounds.size.width - 180) * 4.0 }
+        }
+    }
+    
+    var quaternionY: Double = 0.0 {
+        didSet {
+            if !foundTreasure { treasure.item.center.x = (CGFloat(quaternionY) * view.bounds.size.height + 100) * 4.0 }
+        }
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.backgroundColor = UIColor.blackColor()
         setupMapView()
         setCenterCoordinateOnMapView()
         generateDummyData()
+    }
+    
+    override func viewWillAppear(animated: Bool) {
+        super.viewWillAppear(animated)
+        setupMainComponents()
+    }
+    
+    private func setupMainComponents() {
+        setupCaptureCameraDevice()
+        setupPreviewLayer()
+        setupMotionManager()
+        setupGestureRecognizer()
+        setupDismissButton()
     }
     
 }
@@ -26,7 +63,7 @@ final class MapViewController: UIViewController  {
 // MARK: - Dummy Data
 extension MapViewController {
     
-    private func generateDummyData() {
+    fileprivate func generateDummyData() {
         // let buzzLocation = GPSLocation(latitude: 40.7032775878906, longitude: -74.0170288085938)
         let bullLocation = GPSLocation(latitude: 40.7033342590332, longitude: -74.0139770507812)
         let funnyLocation = GPSLocation(latitude: 40.7082803039551, longitude: -74.0140228271484)
@@ -40,10 +77,13 @@ extension MapViewController {
         let polar = Treasure(location: polarLocation, name: "Hairy Harry", imageURLString: "")
         
         // buzz.image = UIImage(imageLiteral: "BuzzLightyear")
-        bull.image = UIImage(imageLiteral: "ChargingBull")
-        funny.image = UIImage(imageLiteral: "FunnyPhoto")
-        nyse.image = UIImage(imageLiteral: "NYSE")
-        polar.image = UIImage(imageLiteral: "PolarBear")
+        
+        // buzz.imageLiteral = #imageLiteral(resourceName: "BuzzLightyear")
+        bull.image = #imageLiteral(resourceName: "ChargingBull")
+        funny.image = #imageLiteral(resourceName: "FunnyPhoto")
+        nyse.image = #imageLiteral(resourceName: "NYSE")
+        polar.image = #imageLiteral(resourceName: "PolarBear")
+        
         
         let treasureObjects = [bull, funny, nyse, polar]
         
@@ -59,26 +99,26 @@ extension MapViewController {
 // MARK: - Map View Methods
 extension MapViewController {
     
-    private func setupMapView() {
-        mapView = MGLMapView(frame: view.bounds, styleURL: NSURL(string: "mapbox://styles/ianrahman/ciqodpgxe000681nm8xi1u1o9"))
-        mapView.autoresizingMask = [.FlexibleWidth, .FlexibleHeight]
+    fileprivate func setupMapView() {
+        mapView = MGLMapView(frame: view.bounds, styleURL: URL(string: "mapbox://styles/ianrahman/ciqodpgxe000681nm8xi1u1o9"))
+        mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         mapView.delegate = self
-        mapView.userTrackingMode = .Follow
-        mapView.pitchEnabled = true
+        mapView.userTrackingMode = .follow
+        mapView.isPitchEnabled = true
         
         view.addSubview(mapView)
         mapView.translatesAutoresizingMaskIntoConstraints = false
-        mapView.leftAnchor.constraintEqualToAnchor(view.leftAnchor).active = true
-        mapView.rightAnchor.constraintEqualToAnchor(view.rightAnchor).active = true
-        mapView.bottomAnchor.constraintEqualToAnchor(view.bottomAnchor).active = true
-        mapView.topAnchor.constraintEqualToAnchor(view.topAnchor).active = true
+        mapView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
+        mapView.rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
+        mapView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
+        mapView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
     }
     
-    private func setCenterCoordinateOnMapView() {
+    fileprivate func setCenterCoordinateOnMapView() {
         let lat: CLLocationDegrees = 40.706697302800182
         let lng: CLLocationDegrees = -74.014699650804047
         let downtownManhattan = CLLocationCoordinate2D(latitude: lat, longitude: lng)
-        mapView.setCenterCoordinate(downtownManhattan, zoomLevel: 15, direction: 25.0, animated: false)
+        mapView.setCenter(downtownManhattan, zoomLevel: 15, direction: 25.0, animated: false)
     }
     
 }
@@ -86,29 +126,29 @@ extension MapViewController {
 // MARK: - MapView Delegate Methods
 extension MapViewController: MGLMapViewDelegate {
     
-    func mapView(mapView: MGLMapView, viewForAnnotation annotation: MGLAnnotation) -> MGLAnnotationView? {
+    func mapView(_ mapView: MGLMapView, viewFor annotation: MGLAnnotation) -> MGLAnnotationView? {
         
         guard annotation is MGLPointAnnotation else { return nil }
         
         let reuseIdentifier = String(annotation.coordinate.longitude)
         
-        var annotationView = mapView.dequeueReusableAnnotationViewWithIdentifier(reuseIdentifier) as? TreasureAnnotationView
+        var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: reuseIdentifier) as? TreasureAnnotationView
         
         if annotationView == nil {
             annotationView = TreasureAnnotationView(reuseIdentifier: reuseIdentifier)
-            annotationView!.frame = CGRectMake(0, 0, 100, 100)
+            annotationView!.frame = CGRect(x: 0, y: 0, width: 100, height: 100)
             annotationView!.scalesWithViewingDistance = false
-            annotationView!.enabled = true
+            annotationView!.isEnabled = true
             
             let imageView = UIImageView(image: UIImage(named: "treasure"))
-            imageView.contentMode = .ScaleAspectFit
+            imageView.contentMode = .scaleAspectFit
             imageView.translatesAutoresizingMaskIntoConstraints = false
             
             annotationView!.addSubview(imageView)
-            imageView.topAnchor.constraintEqualToAnchor(annotationView?.topAnchor).active = true
-            imageView.bottomAnchor.constraintEqualToAnchor(annotationView?.bottomAnchor).active = true
-            imageView.leftAnchor.constraintEqualToAnchor(annotationView?.leftAnchor).active = true
-            imageView.rightAnchor.constraintEqualToAnchor(annotationView?.rightAnchor).active = true
+            imageView.topAnchor.constraint(equalTo: (annotationView?.topAnchor)!).isActive = true
+            imageView.bottomAnchor.constraint(equalTo: (annotationView?.bottomAnchor)!).isActive = true
+            imageView.leftAnchor.constraint(equalTo: (annotationView?.leftAnchor)!).isActive = true
+            imageView.rightAnchor.constraint(equalTo: (annotationView?.rightAnchor)!).isActive = true
         }
         
         let key = String(annotation.coordinate.latitude) + String(annotation.coordinate.longitude)
@@ -119,20 +159,20 @@ extension MapViewController: MGLMapViewDelegate {
         return annotationView
     }
     
-    func mapView(mapView: MGLMapView, didSelectAnnotationView annotationView: MGLAnnotationView) {
+    func mapView(_ mapView: MGLMapView, didSelect annotationView: MGLAnnotationView) {
         handleTapOfAnnotationView(annotationView)
     }
     
-    func mapView(mapView: MGLMapView, didSelectAnnotation annotation: MGLAnnotation) {
+    func mapView(_ mapView: MGLMapView, didSelect annotation: MGLAnnotation) {
         // TODO: User is in radius of tapped treasure.
     }
     
-    func mapView(mapView: MGLMapView, annotationCanShowCallout annotation: MGLAnnotation) -> Bool {
+    func mapView(_ mapView: MGLMapView, annotationCanShowCallout annotation: MGLAnnotation) -> Bool {
         return true
     }
     
-    func mapViewDidFinishLoadingMap(mapView: MGLMapView) {
-        let camera = MGLMapCamera(lookingAtCenterCoordinate: mapView.centerCoordinate, fromDistance: 200, pitch: 60, heading: 0)
+    func mapViewDidFinishLoadingMap(_ mapView: MGLMapView) {
+        let camera = MGLMapCamera(lookingAtCenter: mapView.centerCoordinate, fromDistance: 200, pitch: 60, heading: 0)
         mapView.setCamera(camera, withDuration: 2, animationTimingFunction: CAMediaTimingFunction(name: kCAMediaTimingFunctionEaseInEaseOut))
         mapView.resetNorth()
     }
@@ -142,7 +182,7 @@ extension MapViewController: MGLMapViewDelegate {
 // MARK: - Annotation Methods
 extension MapViewController {
     
-    private func generateAnnotationWithTreasure(treasure: Treasure) {
+    fileprivate func generateAnnotationWithTreasure(_ treasure: Treasure) {
         let newAnnotation = MGLPointAnnotation()
         let lat = Double(treasure.location.latitude)
         let long = Double(treasure.location.longitude)
@@ -159,16 +199,16 @@ extension MapViewController {
 // MARK: - Segue Method
 extension MapViewController {
     
-    private func handleTapOfAnnotationView(annotationView: MGLAnnotationView) {
+    fileprivate func handleTapOfAnnotationView(_ annotationView: MGLAnnotationView) {
         if let annotation = annotationView as? TreasureAnnotationView {
-            performSegueWithIdentifier("TreasureSegue", sender: annotation)
+            performSegue(withIdentifier: "TreasureSegue", sender: annotation)
         }
         
     }
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         guard segue.identifier == "TreasureSegue" else { return }
-        guard let destVC = segue.destinationViewController as? ViewController else { return }
+        guard let destVC = segue.destination as? ViewController else { return }
         
         if let annotation = sender as? TreasureAnnotationView {
             destVC.treasure = annotation.treasure

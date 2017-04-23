@@ -20,10 +20,10 @@ final class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor.blackColor()
+        view.backgroundColor = UIColor.black
     }
     
-    override func viewWillAppear(animated: Bool) {
+    override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setupDismissButton()
         
@@ -34,14 +34,18 @@ final class ViewController: UIViewController {
     
 }
 
-
-
-
-
-
-
-
-
+// MARK: - AVFoundation Methods
+extension ViewController {
+    
+    private func setupCaptureCameraDevice() {
+        let cameraDevice = AVCaptureDevice.defaultDeviceWithMediaType(AVMediaTypeVideo)
+        let cameraDeviceInput = try? AVCaptureDeviceInput(device: cameraDevice)
+        guard let camera = cameraDeviceInput , captureSession.canAddInput(camera) else { return }
+        captureSession.addInput(camera)
+        captureSession.startRunning()
+    }
+    
+}
 
 
 
@@ -50,25 +54,25 @@ final class ViewController: UIViewController {
 
 // MARK: - Dismiss Button
 extension ViewController {
-    private func setupDismissButton() {
-        dismissButton = UIButton(type: .System)
-        dismissButton.setTitle("❌", forState: .Normal)
-        dismissButton.titleLabel?.font = UIFont.systemFontOfSize(25.0)
-        dismissButton.setTitleColor(UIColor.redColor(), forState: .Normal)
-        dismissButton.addTarget(self, action: #selector(dismiss), forControlEvents: .TouchUpInside)
+    fileprivate func setupDismissButton() {
+        dismissButton = UIButton(type: .system)
+        dismissButton.setTitle("❌", for: UIControlState())
+        dismissButton.titleLabel?.font = UIFont.systemFont(ofSize: 25.0)
+        dismissButton.setTitleColor(UIColor.red, for: UIControlState())
+        dismissButton.addTarget(self, action: #selector(dismiss1), for: .touchUpInside)
         dismissButton.translatesAutoresizingMaskIntoConstraints = false
         dismissButton.alpha = 0.0
         view.addSubview(dismissButton)
-        dismissButton.bottomAnchor.constraintEqualToAnchor(view.bottomAnchor, constant: -14.0).active = true
-        dismissButton.centerXAnchor.constraintEqualToAnchor(view.centerXAnchor).active = true
+        dismissButton.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -14.0).isActive = true
+        dismissButton.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
     }
     
-    func dismiss() {
-        dismissViewControllerAnimated(true, completion: nil)
+    func dismiss1() {
+        self.dismiss(animated: true, completion: nil)
     }
     
-    private func animateInDismissButton() {
-        UIView.transitionWithView(dismissButton, duration: 2.5, options: .TransitionCrossDissolve, animations: {
+    fileprivate func animateInDismissButton() {
+        UIView.transition(with: dismissButton, duration: 2.5, options: .transitionCrossDissolve, animations: {
             self.dismissButton.alpha = 1.0
             }, completion: nil)
     }
@@ -86,61 +90,61 @@ extension ViewController {
         foundImageView.frame = frame
         view.addSubview(foundImageView)
         
-        UIView.animateWithDuration(1.5, delay: 0.8, options: [], animations: {
+        UIView.animate(withDuration: 1.5, delay: 0.8, options: [], animations: {
             self.foundImageView.alpha = 1.0
             }, completion: nil)
     }
     
     func displayDiscoverLabel() {
-        let label = UILabel(frame: CGRectZero)
+        let label = UILabel(frame: CGRect.zero)
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = UIFont(name: "AvenirNext-Regular", size: 30.0)
         label.text = "Caught❗️"
         label.numberOfLines = 1
-        label.textAlignment = .Center
+        label.textAlignment = .center
         label.adjustsFontSizeToFitWidth = true
-        label.textColor = UIColor.whiteColor()
+        label.textColor = UIColor.white
         label.alpha = 0.0
         
         view.addSubview(label)
-        label.centerXAnchor.constraintEqualToAnchor(view.centerXAnchor).active = true
-        label.topAnchor.constraintEqualToAnchor(view.topAnchor, constant: 50.0).active = true
-        label.leftAnchor.constraintEqualToAnchor(view.leftAnchor, constant: 14.0).active = true
-        label.rightAnchor.constraintEqualToAnchor(view.rightAnchor, constant: -14.0).active = true
+        label.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
+        label.topAnchor.constraint(equalTo: view.topAnchor, constant: 50.0).isActive = true
+        label.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 14.0).isActive = true
+        label.rightAnchor.constraint(equalTo: view.rightAnchor, constant: -14.0).isActive = true
         
         label.center.x -= 800
         label.alpha = 1.0
         
-        UIView.animateWithDuration(1.5, delay: 0.5, usingSpringWithDamping: 0.8, initialSpringVelocity: 4.0, options: [], animations: {
+        UIView.animate(withDuration: 1.5, delay: 0.5, usingSpringWithDamping: 0.8, initialSpringVelocity: 4.0, options: [], animations: {
             label.center.x = self.view.center.x
             }, completion: nil)
     }
     
     func displayNameOfTreasure() {
-        let label = UILabel(frame: CGRectZero)
+        let label = UILabel(frame: CGRect.zero)
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = UIFont(name: "AvenirNext-Regular", size: 45.0)
         label.text = treasure.name
         label.numberOfLines = 1
-        label.textAlignment = .Center
+        label.textAlignment = .center
         label.adjustsFontSizeToFitWidth = true
         label.textColor = UIColor.flatironBlueColor()
         label.alpha = 0.0
         
         view.addSubview(label)
         
-        label.centerXAnchor.constraintEqualToAnchor(foundImageView.centerXAnchor).active = true
-        label.topAnchor.constraintEqualToAnchor(foundImageView.bottomAnchor, constant: 14.0).active = true
-        label.centerYAnchor.constraintEqualToAnchor(foundImageView.centerYAnchor).active = false
-        label.leftAnchor.constraintEqualToAnchor(view.leftAnchor).active = true
-        label.rightAnchor.constraintEqualToAnchor(view.rightAnchor).active = true
+        label.centerXAnchor.constraint(equalTo: foundImageView.centerXAnchor).isActive = true
+        label.topAnchor.constraint(equalTo: foundImageView.bottomAnchor, constant: 14.0).isActive = true
+        label.centerYAnchor.constraint(equalTo: foundImageView.centerYAnchor).isActive = false
+        label.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
+        label.rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
         
         
         let originalCenterY = label.center.y
         label.center.y += 400
         label.alpha = 1.0
         
-        UIView.animateWithDuration(2.5, delay: 0.5, usingSpringWithDamping: 0.8, initialSpringVelocity: 1.0, options: [], animations: {
+        UIView.animate(withDuration: 2.5, delay: 0.5, usingSpringWithDamping: 0.8, initialSpringVelocity: 1.0, options: [], animations: {
             label.center.y = originalCenterY
             }, completion: nil)
     }
@@ -154,32 +158,32 @@ extension CALayer {
         let springX = CASpringAnimation(keyPath: "position.x")
         springX.damping = damping
         springX.fromValue = self.center.x
-        springX.toValue = CGRectGetMidX(view.frame)
+        springX.toValue = view.frame.midX
         springX.duration = duration
-        self.addAnimation(springX, forKey: nil)
+        self.add(springX, forKey: nil)
         
         let springY = CASpringAnimation(keyPath: "position.y")
         springY.damping = damping
         springY.fromValue = self.center.y
-        springY.toValue = CGRectGetMidY(view.frame)
+        springY.toValue = view.frame.midY
         springY.duration = duration
-        self.addAnimation(springY, forKey: nil)
+        self.add(springY, forKey: nil)
     }
     
-    func centerInView(view: UIView) {
-        self.center = CGPoint(x: CGRectGetMidX(view.frame), y: CGRectGetMidY(view.frame))
+    func centerInView(_ view: UIView) {
+        self.center = CGPoint(x: view.frame.midX, y: view.frame.midY)
     }
     
-    func fadeOutWithDuration(duration: CFTimeInterval) {
+    func fadeOutWithDuration(_ duration: CFTimeInterval) {
         let fadeOut = CABasicAnimation(keyPath: "opacity")
-        fadeOut.delegate = self
+        //fadeOut.delegate = self
         fadeOut.duration = duration
         fadeOut.autoreverses = false
         fadeOut.fromValue = 1.0
         fadeOut.toValue = 0.6
         fadeOut.fillMode = kCAFillModeBoth
-        fadeOut.removedOnCompletion = false
-        self.addAnimation(fadeOut, forKey: "myanimation")
+        fadeOut.isRemovedOnCompletion = false
+        self.add(fadeOut, forKey: "myanimation")
     }
     
 }
@@ -189,7 +193,7 @@ extension CALayer {
     
     var center: CGPoint {
         get {
-            return CGPointMake(CGRectGetMidX(self.frame), CGRectGetMidY(self.frame))
+            return CGPoint(x: self.frame.midX, y: self.frame.midY)
         }
         
         set {
@@ -215,7 +219,7 @@ extension CALayer {
 // MARK: - CGPoint Functions
 extension CGPoint {
     
-    func isInRangeOfTreasure(treasure: CGPoint) -> Bool {
+    func isInRangeOfTreasure(_ treasure: CGPoint) -> Bool {
         return true
     }
     

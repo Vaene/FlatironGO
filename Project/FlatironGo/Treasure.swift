@@ -31,27 +31,27 @@ final class Treasure: CustomStringConvertible {
     
     func createItem() {
         guard let image = image else {print("fix this later"); return }
-        item.contents = image.CGImage
+        item.contents = image.cgImage
     }
     
-    func makeImage(withCompletion completion: (Bool) -> ()) {
+    func makeImage(withCompletion completion: @escaping (Bool) -> ()) {
         guard downloadingImage == false else { print("Already downloading image."); return }
         guard image == nil else { print("We already have image"); return }
-        guard let imageURL = NSURL(string: imageURL) else { print("Couldnt convert URL"); completion(false); return }
+        guard let imageURL = URL(string: imageURL) else { print("Couldnt convert URL"); completion(false); return }
         
         downloadingImage = true
         
-        let session = NSURLSession.sharedSession()
+        let session = URLSession.shared
         
-        session.dataTaskWithURL(imageURL) { [unowned self] data, response, error in
-            dispatch_async(dispatch_get_main_queue(),{
+        session.dataTask(with: imageURL, completionHandler: { [unowned self] data, response, error in
+            DispatchQueue.main.async(execute: {
                 guard let data = data else { print("data came back nil"); completion(false); return }
                 if let image = UIImage(data: data) { self.image = image }
                 self.downloadingImage = false
                 self.createItem()
                 completion(true)
             })
-            }.resume()
+            }) .resume()
         
     }
 }
